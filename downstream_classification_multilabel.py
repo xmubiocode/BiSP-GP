@@ -22,7 +22,7 @@ class AttrDict(dict):
         self.__dict__ = self
 
 
-class SPMM_classifier(nn.Module):
+class down_classifier(nn.Module):
     def __init__(self, tokenizer=None, config=None, n_output=2):
         super().__init__()
         self.tokenizer = tokenizer
@@ -122,7 +122,7 @@ def main(args, config):
     cudnn.benchmark = True
     # === Model === #
     print("Creating model")
-    model = SPMM_classifier(config=config, tokenizer=tokenizer, n_output=dataset_train.n_output)
+    model = down_classifier(config=config, tokenizer=tokenizer, n_output=dataset_train.n_output)
     print('#parameters:', sum(p.numel() for p in model.parameters() if p.requires_grad))
 
     if args.checkpoint:
@@ -203,4 +203,5 @@ if __name__ == '__main__':
     # for i in range(100):
     #     args.seed=i
     #     args.name="sider"
+
     #     main(args, cls_config)
