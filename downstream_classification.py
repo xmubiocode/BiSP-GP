@@ -140,7 +140,7 @@ def main(args, config):
     print('seed:', seed)
     # === Model === #
     print("Creating model")
-    model = SPMM_classifier(config=config, tokenizer=tokenizer)
+    model = down_classifier(config=config, tokenizer=tokenizer)
     print('#parameters:', sum(p.numel() for p in model.parameters() if p.requires_grad))
 
     if args.checkpoint:
@@ -215,4 +215,5 @@ if __name__ == '__main__':
         'optimizer': {'opt': 'adamW', 'lr': args.lr, 'weight_decay': 0.02}
     }
     main(args, cls_config)
+
 
