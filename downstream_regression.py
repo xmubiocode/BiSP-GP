@@ -21,7 +21,7 @@ class AttrDict(dict):
         self.__dict__ = self
 
 
-class SPMM_regressor(nn.Module):
+class down_regressor(nn.Module):
     def __init__(self, tokenizer=None, config=None):
         super().__init__()
         self.tokenizer = tokenizer
@@ -162,7 +162,7 @@ def main(args, config):
 
     # === Model === #
     print("Creating model")
-    model = SPMM_regressor(config=config, tokenizer=tokenizer)
+    model = down_regressor(config=config, tokenizer=tokenizer)
     print('#parameters:', sum(p.numel() for p in model.parameters() if p.requires_grad))
 
     if args.checkpoint:
@@ -243,3 +243,4 @@ if __name__ == '__main__':
         'optimizer': {'opt': 'adamW', 'lr': args.lr, 'weight_decay': 0.02}
     }
     main(args, cls_config)
+
