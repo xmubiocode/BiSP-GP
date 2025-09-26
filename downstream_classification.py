@@ -23,7 +23,7 @@ class AttrDict(dict):
         self.__dict__ = self
 
 
-class SPMM_classifier(nn.Module):
+class down_classifier(nn.Module):
     def __init__(self, tokenizer=None, config=None):
         super().__init__()
         self.tokenizer = tokenizer
@@ -215,3 +215,4 @@ if __name__ == '__main__':
         'optimizer': {'opt': 'adamW', 'lr': args.lr, 'weight_decay': 0.02}
     }
     main(args, cls_config)
+
