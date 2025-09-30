@@ -1,6 +1,6 @@
 import argparse
 import torch
-from pretrain_model import PSBPGM
+from pretrain_model import BiSP_GP
 import torch.backends.cudnn as cudnn
 from transformers import BertTokenizer, WordpieceTokenizer
 from calc_property import calculate_property_v1,transform_string_generation,transform_string
@@ -315,7 +315,7 @@ def main(args, config,prop_input):
 
             # === Model === #
             print("Creating model")
-            model = PSBPGM(config=config, tokenizer=tokenizer, no_train=True)
+            model = BiSP_GP(config=config, tokenizer=tokenizer, no_train=True)
             print("token file",args.vocab_filename)
             if args.checkpoint:
                 print('LOADING PRETRAINED MODEL..')
@@ -387,9 +387,9 @@ if __name__ == '__main__':
                 else:
                     prop_input=arg.scaffold_prop_input
             else:
-                prop_qed=[0.5,0.7,0.9]#[0.3,0.6,0.9]
-                prop_logp=[2.0,3.0,4.0]#[2,4,6]
-                prop_sas=[2.0,2.5,3.0]#[2,3,4]
+                prop_qed=[0.5,0.7,0.9]
+                prop_logp=[2.0,3.0,4.0]
+                prop_sas=[2.0,2.5,3.0]
                 prop_list={"qed":prop_qed,"logp":prop_logp,"sas":prop_sas}
                 prop_input=[]
                 if len(prop_input_name)==1:
@@ -418,6 +418,7 @@ if __name__ == '__main__':
         'bert_config_property': './config_bert_property.json',
     }
     main(arg, configs,prop_input)
+
 
 
 #
