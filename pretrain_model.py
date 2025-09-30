@@ -12,9 +12,9 @@ class AttrDict(dict):
         
 
 
-class PSBPGM(pl.LightningModule):
+class BiSP_GP(pl.LightningModule):
     def __init__(self, tokenizer=None, no_train=False, loader_len=100, config=None):
-        super(PSBPGM, self).__init__()
+        super(BiSP_GP, self).__init__()
         self.automatic_optimization = False
         self.tokenizer = tokenizer
         self.config=config
@@ -35,7 +35,6 @@ class PSBPGM(pl.LightningModule):
         self.text_proj = nn.Linear(text_width, embed_dim)
         self.star=torch.tensor([300, 301, 302])
         self.end=torch.tensor([301, 302, 3])
-        #构建教师动量模型
         self.property_encoder_m = BertForMaskedLM(config=bert_config2)
         self.property_proj_m = nn.Linear(property_width, embed_dim)
         self.text_encoder_m = BertForMaskedLM(config=bert_config)
@@ -336,4 +335,5 @@ def concat_all_gather(tensor):
 
     output = torch.cat(tensors_gather, dim=0)
     return output
+
 
