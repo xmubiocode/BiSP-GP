@@ -173,15 +173,15 @@ def main(args, config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--checkpoint', default='/home/syy/pretrain_syy/scaffold_model/model_save/11_23/checkpoint_step=260000.ckpt')
-    parser.add_argument('--vocab_filename', default='./vocab_bpe_367.txt')
+    parser.add_argument('--checkpoint', default='model_save/checkpoint_step.ckpt')
+    parser.add_argument('--vocab_filename', default='./vocab.txt')
     parser.add_argument('--save_path', default='')
     parser.add_argument('--device', default='cuda')
     parser.add_argument('--seed', default=14,type=int)
     parser.add_argument('--name', default='clintox', type=str)
     parser.add_argument('--lr', default=5e-6, type=float)
     parser.add_argument('--min_lr', default=5e-6, type=float)
-    parser.add_argument('--epoch', default=30, type=int)
+    parser.add_argument('--epoch', default=100, type=int)
     parser.add_argument('--batch_size', default=64, type=int)
     args = parser.parse_args()
 
@@ -189,19 +189,12 @@ if __name__ == '__main__':
         'batch_size_train': args.batch_size,
         'batch_size_test': 64,
         'embed_dim': 256,
-        'bert_config_text': './config_bert.json',
-        'bert_config_property': './config_bert_pp.json',
+        'bert_config_text': './config_bert_smiles.json',
+        'bert_config_property': './config_bert_property.json',
         'schedular': {'sched': 'cosine', 'lr': args.lr, 'epochs': args.epoch, 'min_lr': args.min_lr,
                       'decay_rate': 1, 'warmup_lr': 0.5e-5, 'warmup_epochs': 1, 'cooldown_epochs': 0},
         'optimizer': {'opt': 'adamW', 'lr': args.lr, 'weight_decay': 0.02}
     }
     main(args, cls_config)
-    # for i in range(100):
-    #     args.seed=i
-    #     args.name="clintox"
-    #     main(args, cls_config)
-    # for i in range(100):
-    #     args.seed=i
-    #     args.name="sider"
+   
 
-    #     main(args, cls_config)
