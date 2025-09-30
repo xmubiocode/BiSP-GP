@@ -1,6 +1,6 @@
 import argparse
 import torch
-from pretrain_model import PSBPGM
+from pretrain_model import BiSP_GP
 import torch.backends.cudnn as cudnn
 from transformers import BertTokenizer, WordpieceTokenizer
 from calc_property import calculate_property_v1,transform_string_generation,transform_string
@@ -43,23 +43,23 @@ def generate(model, image_embeds, text, stochastic=True, prop_att_mask=None, k=N
     
     if k:
         p = torch.softmax(token_output, dim=-1)
-        if stochastic:#stochastic=True表示随机生成分子
-            output = torch.multinomial(p, num_samples=k, replacement=False)#从p中采样k个样本
+        if stochastic:#stochastic=True
+            output = torch.multinomial(p, num_samples=k, replacement=False)
             return torch.log(torch.stack([p[i][output[i]] for i in range(output.size(0))])), output
         else:
-            output = torch.topk(p, k=k, dim=-1)  # batch*k#返回最大的k个值
-            return torch.log(output.values), output.indices#返回最大的k个值和对应的索引
+            output = torch.topk(p, k=k, dim=-1)  # batch*k
+            return torch.log(output.values), output.indices
     if stochastic:#
-        p = torch.softmax(token_output, dim=-1)####可以添加温度参数，控制生成的多样性p = torch.softmax(token_output/1.2, dim=-1)
-        m = Categorical(p)#创建一个类别分布
-        token_output = m.sample()#从分布中采样一个值
+        p = torch.softmax(token_output, dim=-1)
+        m = Categorical(p)
+        token_output = m.sample()
     else:
-        token_output = torch.argmax(token_output, dim=-1)#返回最大值的索引
+        token_output = torch.argmax(token_output, dim=-1)
     return token_output.unsqueeze(1)  # batch*1
 
 
 @torch.no_grad()
-def generate_with_property(model, properties=None,scaffold=None, n_sample=None, k=2, stochastic=True, prop_len=None):#k=2表示每次生成两个分子
+def generate_with_property(model, properties=None,scaffold=None, n_sample=None, k=2, stochastic=True, prop_len=None):
     
     print(properties, scaffold, n_sample, k, stochastic, prop_len)
     device = model.device
@@ -68,38 +68,6 @@ def generate_with_property(model, properties=None,scaffold=None, n_sample=None, 
     model.eval()
     print(f"PV-to-SMILES generation in {'stochastic' if stochastic else 'deterministic'} manner with k={k}...")
 
-    # with open('/home/syy/spmm-main/normalize.pkl', 'rb') as w:
-    #     norm = pickle.load(w)
-    # property_mean, property_std = norm
-    # properties = (properties - property_mean) / property_std
-    # prop = properties.unsqueeze(0).repeat(1, 1)
-    # prop = prop.to(device, non_blocking=True)
-
-    # property1 = model.property_embed(prop.unsqueeze(2))  # batch*12*feature
-
-    # property_unk = model.property_mask.expand(property1.size(0), property1.size(1), -1)
-    # mpm_mask_expand = prop_mask.unsqueeze(0).unsqueeze(2).repeat(property_unk.size(0), 1, property_unk.size(2)).to(device)
-    # property_masked = property1 * (1 - mpm_mask_expand) + property_unk * mpm_mask_expand
-    #properties = torch.cat([model.property_cls.expand(property_masked.size(0), -1, -1), property_masked], dim=1)
-    
-    candidate = []
-    # if scaffold is not None and properties is not None:
-    #     scaffold_input=tokenizer(scaffold,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)
-    #     print("scaffold_input",scaffold_input.input_ids)
-    #     scaffold_emdeds=model.text_encoder.bert(scaffold_input.input_ids[:,1:], scaffold_input.attention_mask[:,1:],return_dict=True,mode='text').last_hidden_state
-    #     print("scaffold_emdeds",scaffold_emdeds.size())
-    #     prop_input=tokenizer(properties,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)#padding='longest'表示填充到最长的序列，padding="max_length"表示填充到最大长度为120
-    #     print("11111")
-    #     print("prop_input",prop_input.input_ids)
-    #     prop_embeds = model.property_encoder.bert(prop_input.input_ids[:,:-1], prop_input.attention_mask[:,:-1],return_dict=True,mode='text').last_hidden_state
-    #     print("prop_embeds",prop_embeds.size())
-    #     condation_input=torch.cat((prop_embeds,scaffold_emdeds[:,1:]),dim=1)
-    #     condation_atten_mask=torch.cat((prop_input.attention_mask[:,:-1],scaffold_input.attention_mask[:,2:]),dim=1)
-    #     print("condation_input",condation_input)
-    #     print("condation_input",condation_input.size())
-    #     print("condation_atten_mask",condation_atten_mask)
-    #     print("condation_atten_mask",condation_atten_mask.size())
-    """
     if scaffold is not None and properties is not None:
         scaffold_input=tokenizer(scaffold,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)
         scaffold_emdeds=model.text_encoder.bert(scaffold_input.input_ids[:,1:], scaffold_input.attention_mask[:,1:],return_dict=True,mode='text').last_hidden_state
@@ -135,11 +103,10 @@ def generate_with_property(model, properties=None,scaffold=None, n_sample=None, 
         scaffold_input=tokenizer(scaffold,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)
         scaffold_emdeds=model.text_encoder.bert(scaffold_input.input_ids[:,1:], scaffold_input.attention_mask[:,1:],return_dict=True,mode='text').last_hidden_state
         print("scaffold_emdeds",scaffold_input)
-        prop_input=tokenizer(properties,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)#padding='longest'表示填充到最长的序列，padding="max_length"表示填充到最大长度为120
+        prop_input=tokenizer(properties,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)
         print("prop_input",prop_input.input_ids)
         prop_embeds = model.property_encoder.bert(prop_input.input_ids, prop_input.attention_mask,return_dict=True,mode='text').last_hidden_state
         print("prop_embeds",prop_embeds.size())
-        ###将属性和支架的embedding拼接,prop_embeds[:,:-1]表示去掉[SEQ]的embedding，scaffold_emdeds[:,1:]表示去掉[CLS]的embedding
         condation_input=torch.cat((prop_embeds[:,:-1],scaffold_emdeds[:,1:]),dim=1)
         condation_atten_mask=torch.cat((prop_input.attention_mask[:,:-1],scaffold_input.attention_mask[:,2:]),dim=1)
         # condation_input=torch.cat((prop_embeds,scaffold_emdeds),dim=1)
@@ -157,8 +124,6 @@ def generate_with_property(model, properties=None,scaffold=None, n_sample=None, 
     else:
         print("Please input scaffold or properties")
         
-        
-    ## generate,按照概率逐步生成分子
     for n in tqdm(range(n_sample)):
         product_input = torch.tensor([tokenizer.cls_token_id]).expand(1, 1).to(device)
         values, indices = generate(model, condation_input, product_input, stochastic=stochastic, prop_att_mask=condation_atten_mask, k=k)
@@ -191,12 +156,12 @@ def generate_with_property(model, properties=None,scaffold=None, n_sample=None, 
         final_output = sorted(final_output, key=lambda x: x[0], reverse=True)[:k]#
         
         for p, sentence in final_output:
-            cdd = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(sentence[:-1])).replace('[CLS]', '')#将token转化为字符串
+            cdd = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(sentence[:-1])).replace('[CLS]', '')
             candidate_k.append(cdd)
         if not stochastic:
             candidate.append(candidate_k[0])
         else:
-            candidate.append(random.choice(candidate_k))#随机选择一个分子
+            candidate.append(random.choice(candidate_k))
     return candidate
 
 @torch.no_grad()
@@ -222,34 +187,19 @@ def metric_eval(prop_input, cand,prop_idx,train_smiles=None,mean=None,std=None,s
         for i in range(len(cand)):
             try:
                 prop_cdd = calculate_property_v1(cand[i])
-                prop_cdd=prop_cdd[prop_idx]##取出生成分子的属性
-                
-                ######将属性标准化
+                prop_cdd=prop_cdd[prop_idx]
                 n_ref = (prop_input - mean) /std
                 n_cdd = (prop_cdd - mean) / std
                 mse.append((n_ref - n_cdd) ** 2)
-                
-                ######不标准化
                 mse_1.append((prop_input-prop_cdd)**2)
                 #计算平均绝对差
                 mad.append(abs(prop_input-prop_cdd))
         
             except:
                 continue
-        mse = torch.stack(mse, dim=0)#
-        rmse = torch.sqrt(torch.mean(mse, dim=0))
-        print("rmse: ", rmse)
-        print('mean of controlled properties\' normalized RMSE:', rmse.mean().item())
         
-        mse_1 = torch.stack(mse_1, dim=0)#
-        rmse_1 = torch.sqrt(torch.mean(mse_1, dim=0))
-        print("rmse_1: ", rmse_1)
-        print('mean of controlled properties\' RMSE:', rmse_1.mean().item())
-        
-        ####计算平均绝对差
         mad=torch.stack(mad, dim=0)
         print("mad: ", torch.mean(mad, dim=0))
-        print("std",torch.std(mad, dim=0))
     
     lines=[]
     for l in cand:
@@ -258,7 +208,7 @@ def metric_eval(prop_input, cand,prop_idx,train_smiles=None,mean=None,std=None,s
             smiles = Chem.MolToSmiles(mol, isomericSmiles=False, canonical=True)
             lines.append(smiles)
     #print("valids",lines)
-    #valids = [Chem.MolToSmiles(Chem.MolFromSmiles(l), isomericSmiles=False, canonical=True) for l in valids]#将SMILES转化为分子
+    #valids = [Chem.MolToSmiles(Chem.MolFromSmiles(l), isomericSmiles=False, canonical=True) for l in valids]
 
     #lines = valids
     if scaffold is not None:
@@ -326,39 +276,35 @@ def main(args, config,prop_input):
         test_data=pd.read_csv(args.test_scaffold)
         test_scaffold=test_data["scaffold"].iloc[0:10000].tolist()
         test_smiles=test_data["SMILES"].iloc[0:10000].tolist()
-        ####自定义属性或者从文件中读取属性
-        #有属性无scaffold条件
+      
         if args.prop_bool and not args.scaffold:
-            #自定义输入
             if args.prop_input_bool:
                 prop_input_test=prop_input
             else:
                 prop_input_test=test_smiles
                 print("scaffold",len(test_scaffold))
             scaffold_input_test=None
-        #有scaffold无属性条件
         elif args.scaffold and not args.prop_bool:
             if arg.scaffold_input is not None:
                 scaffold_input_test=args.scaffold_input
             else:
                 scaffold_input_test=test_scaffold
             prop_input_test=None
-        #有属性和scaffold条件   
+  
         elif args.prop_bool and args.scaffold:
             if args.prop_input_bool:
                 if len(prop_input)==len(test_smiles) or len(prop_input)==len(args.scaffold_input):
                     prop_input_test=prop_input
                 else:
-                    prop_input_test=[prop_input[0] for _ in range(len(test_smiles))]#如果属性输入的长度和测试集的长度不一致，则重复属性输入
+                    prop_input_test=[prop_input[0] for _ in range(len(test_smiles))
             else:
                 prop_input_test=test_smiles
             if arg.scaffold_input is not None:
                 scaffold_input_test=args.scaffold_input
             else:
                 scaffold_input_test=test_scaffold
-        #无属性无scaffold条件
         elif  not args.prop_bool  and not args.scaffold:
-            prop_input_test=[1]#[1,2,3,4,5,6,7,8,9,10,1,2,3,4,5,6,7,8,9,10]
+            prop_input_test=[1]
             scaffold_input_test=None
         
         # print("prop_input_test",prop_input_test)
@@ -368,11 +314,9 @@ def main(args, config,prop_input):
             epoch_len=len(scaffold_input_test)
         else:
             epoch_len=len(prop_input_test)
-        ####开始生成分子
         for i in range(6273,10000):
             print("epoch:",i)
             prop={"qed":None,"logp":None,"sas":None}
-            #定义属性条件
             if args.prop_bool:
                 if args.prop_input_bool:
                     prop_input_value=prop_input_test[i]   
@@ -401,7 +345,7 @@ def main(args, config,prop_input):
             f.write(f"prop_input:{prop_input}  scaffold_smiles:{scaffold_smiles}\n")
             
             # seed = random.randint(0, 1000)
-            seed=462#266#462
+            seed=266
             print('seed:', seed, args.stochastic)
             torch.manual_seed(seed)
             np.random.seed(seed)
@@ -414,7 +358,7 @@ def main(args, config,prop_input):
 
             # === Model === #
             print("Creating model")
-            model = PSBPGM(config=config, tokenizer=tokenizer, no_train=True)
+            model = BiSP_GP(config=config, tokenizer=tokenizer, no_train=True)
             print("token file",args.vocab_filename)
             if args.checkpoint:
                 print('LOADING PRETRAINED MODEL..')
@@ -432,12 +376,6 @@ def main(args, config,prop_input):
                 print(msg)
             model = model.to(device)
             samples = generate_with_property(model, properties=prop_input,scaffold=scaffold_smiles,n_sample=args.n_generate, stochastic=args.stochastic, k=args.k,prop_len=arg.property_len)
-            # with open(f"{args.output_dir}/{args.smiles_save}_scaffold_generated_0{i}.txt", "w") as w:
-            #     for v in samples:    
-            #         w.write(v + '\n')
-            # with open(f'/home/syy/model_pretrain_CL_v2/a_ours_scaffold_model/generation_files/generated_molecules_scaffold_0.txt', 'r') as w:
-            #     samples = w.readlines()
-            # samples = [s.strip() for s in samples]
             print('Generated molecules are saved in \'generated_molecules_1.txt\'')
             metric,metric_list=metric_eval(prop_input_value, samples,args.prop_index,train_smiles,mean,std,scaffold_smiles_s)#,train_smile["SMILES"][0:20000000])#评估生成的分子的性质[0:48000000]
             metric_list_all.append(metric_list)
@@ -458,32 +396,31 @@ import itertools
 if __name__ == '__main__':
     # device = torch.device('cuda:0')
     parser = argparse.ArgumentParser()
-    parser.add_argument('--checkpoint', default='/home/syy/model_pretrain_CL_v2/a_ours_scaffold_model/model_save/A100/11_23/checkpoint_step=260000.ckpt')#模型地址
-    parser.add_argument('--vocab_filename', default='./vocab_bpe_367.txt')#词表地址
-    parser.add_argument('--train_smiles', default="/home/syy/pretrain_syy/model_pretrain_CL/data/data_char_new_same.csv")#训练数据地址
-    parser.add_argument('--train_smiles_num', default=20000000)#训练数据数量
-    parser.add_argument('--test_scaffold', default="/home/syy/pretrain_syy/scaffold_model/data/unscaffold_mose_7_16.csv")#测试数据地址
-    parser.add_argument('--output_dir', default="/home/syy/model_pretrain_CL_v2/a_ours_scaffold_model/model_save/A100/11_23/output_smiles/generation_signprop_scaffld_2/")#输出地址
-    parser.add_argument('--smiles_save', default="scaffold_")#
+    parser.add_argument('--checkpoint', default='/model_save/checkpoint_step.ckpt')
+    parser.add_argument('--vocab_filename', default='./vocab.txt')
+    parser.add_argument('--train_smiles', default="/data/train_data.csv")
+    parser.add_argument('--train_smiles_num', default=20000000)
+    parser.add_argument('--test_scaffold', default=None)
+    parser.add_argument('--output_dir', default="/output_smiles/generation_signprop_scaffld/")
+    parser.add_argument('--smiles_save', default="scaffold_")
     parser.add_argument('--device', default='cuda:0')  
     parser.add_argument('--n_generate', default=1000, type=int)
     parser.add_argument('--k', default=2, type=int)
     parser.add_argument('--property_len', default=25,type=int)
-    parser.add_argument('--stochastic', default=True, type=bool)#stochastic=True表示随机生成分子
-    parser.add_argument('--prop_bool', default=False, type=bool)#False表示没有属性条件
-    parser.add_argument('--prop_name', default=None)#属性条件
-    parser.add_argument('--prop_index', default=None,type=int, nargs='+')#属性条件索引
-    parser.add_argument('--scaffold', default=False, type=bool)#scaffold=True表示有scaffold条件
-    parser.add_argument('--scaffold_input', default=None, type=json.loads)#scaffold条件
+    parser.add_argument('--stochastic', default=True, type=bool)#stochastic=True
+    parser.add_argument('--prop_bool', default=False, type=bool)#False
+    parser.add_argument('--prop_name', default=None)
+    parser.add_argument('--prop_index', default=None,type=int, nargs='+')
+    parser.add_argument('--scaffold', default=False, type=bool)
+    parser.add_argument('--scaffold_input', default=None, type=json.loads)
     parser.add_argument('--scaffold_prop_input', default=None,type=float, nargs='+')
-    parser.add_argument('--prop_input_bool', default=False)#True 表示通过自定义输入属性条件
-    parser.add_argument('--prop_name_all', default=["qed","logp","sas"])#属性条件
+    parser.add_argument('--prop_input_bool', default=False)
+    parser.add_argument('--prop_name_all', default=["qed","logp","sas"])
     arg = parser.parse_args()
     
     
     print("arg",arg.prop_bool)
     print("arg",arg.scaffold_prop_input)
-    ####构建属性条件
     if arg.prop_bool:
         if arg.prop_input_bool:
             if arg.scaffold_prop_input is not None:
@@ -516,12 +453,6 @@ if __name__ == '__main__':
             prop_input=None
     else:
         prop_input=None
-    
-    
-    
-    
-    ####定义scaffold+属性条件
-        
     print("prop_input",prop_input)
     configs = {
         'embed_dim': 256,
@@ -529,6 +460,7 @@ if __name__ == '__main__':
         'bert_config_property': './config_bert_property.json',
     }
     main(arg, configs,prop_input)
+
 
 
 #
