@@ -353,7 +353,7 @@ import itertools
 if __name__ == '__main__':
     # device = torch.device('cuda:0')
     parser = argparse.ArgumentParser()
-    parser.add_argument('--checkpoint', default='./model_save/checkpoint_step=260000.ckpt')
+    parser.add_argument('--checkpoint', default='./model_save/checkpoint_step.ckpt')
     parser.add_argument('--vocab_filename', default='./vocab.txt')
     parser.add_argument('--train_smiles', default="./data/pretraining/pretraining_data.csv")
     parser.add_argument('--test_scaffold', default="./data/scaffold/scaffold_test.csv")
@@ -422,3 +422,4 @@ if __name__ == '__main__':
 
 
 #
+
