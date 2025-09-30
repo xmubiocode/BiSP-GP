@@ -8,7 +8,7 @@ pandas==2.0.2
 
 **Data**
 -------
-Data and checkpoints can be found here
+Data and checkpoints can be found [here](https://drive.google.com/drive/folders/1VI3bUp1TICbnDLCLF8wKFo3qtxcRVsCk?usp=sharing)
 
 **Training**
 --------
