@@ -15,7 +15,7 @@ python pretraining.py
 ----------
 Unconditional SMILES generation
 
-python generation_proper2smiles.py 
+'python generation_proper2smiles.py '
 
 Generation-based on single/multiple properties
 
