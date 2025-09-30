@@ -1,7 +1,7 @@
 import argparse
 import torch
 import numpy as np
-from pretrain_model import PSBPGM
+from pretrain_model import BiSP_GP
 import torch.backends.cudnn as cudnn
 from transformers import BertTokenizer, WordpieceTokenizer
 from dataset import Pretrain_Dataset
@@ -212,7 +212,7 @@ def main(args, config):
 
     # === Model === #
     print("Creating model")
-    model = PSBPGM(config=config, tokenizer=tokenizer, no_train=True)
+    model = BiSP_GP(config=config, tokenizer=tokenizer, no_train=True)
 
     if args.checkpoint:
         print('LOADING PRETRAINED MODEL..')
@@ -259,3 +259,4 @@ if __name__ == '__main__':
         'bert_config_property': './config_bert_property.json',
     }
     main(args, config)
+
