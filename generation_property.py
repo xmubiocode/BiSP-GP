@@ -11,8 +11,6 @@ import pickle
 from sklearn.metrics import r2_score
 import re
 
-############分子属性预测
-
 def generate(model, prop_input, text_embeds, text_atts):
     prop_atts = torch.ones(prop_input.size(), dtype=torch.long).to(prop_input.device)
     prop_embeds=model.property_encoder.bert(prop_input,prop_atts,is_decoder=True, return_dict=True,).last_hidden_state
@@ -26,7 +24,7 @@ def generate(model, prop_input, text_embeds, text_atts):
                                         mode='fusion',
                                         )[:, -1, :]  # batch*300
     
-    token_output = torch.argmax(token_output, dim=-1)#返回最大值的索引
+    token_output = torch.argmax(token_output, dim=-1)
     return token_output.unsqueeze(1)  #
 
 
@@ -41,8 +39,8 @@ def pv_generate(model, data_loader):
     print("SMILES-to-PV generation...")
     # convert list of string to dataloader
     
-    if isinstance(data_loader, list):#判断data_loader是否是list类型
-        if data_loader[0][5] != "[CLS]":#判断第一个元素的第一个字符是否是"[CLS]"
+    if isinstance(data_loader, list):
+        if data_loader[0][5] != "[CLS]":
             data_loader = ['[CLS]'+d for d in data_loader]
         gather = []
         text_input = tokenizer(data_loader, padding='longest', truncation=True, max_length=100, return_tensors="pt").to(device)
@@ -66,7 +64,7 @@ def pv_generate(model, data_loader):
         text_input = tokenizer(text, padding='longest', truncation=True, max_length=100, return_tensors="pt").to(device)
         text_embeds = model.text_encoder.bert(text_input.input_ids[:, 1:], attention_mask=text_input.attention_mask[:, 1:],
                                               return_dict=True, mode='text').last_hidden_state
-        prop_input = torch.tensor([tokenizer.cls_token_id]).expand(len(text), 1).to(device)#获得一个全是property_cls的tensor，大小和text一样
+        prop_input = torch.tensor([tokenizer.cls_token_id]).expand(len(text), 1).to(device)
         prediction = []
         for i in range(20):
             #print ("i",i)
@@ -75,7 +73,7 @@ def pv_generate(model, data_loader):
             prop_input = torch.cat([prop_input, output], dim=1)
             
                 
-        prediction = torch.stack(prediction, dim=-1)#将prediction的值按照dim=-1的维度进行堆叠
+        prediction = torch.stack(prediction, dim=-1)
         for i in range(prop.size(0)):
             reference.append(prop[i].cpu())
             candidate.append(prediction[i].cpu())
@@ -84,7 +82,7 @@ def pv_generate(model, data_loader):
     for sentence in candidate:
         p=[]
         for i in sentence:
-            cdd = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(i))#将token转化为字符串
+            cdd = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(i))
             p.append(cdd)
         candidate_p.append(p)
     condidate_num=[]
@@ -100,58 +98,49 @@ def pv_generate(model, data_loader):
             print(e)
     
     print('SMILES-to-PV generation done')
-    return reference, torch.tensor(condidate_num)#reference是真实的物性值，candidate是生成的物性值
+    return reference, torch.tensor(condidate_num)
 
 def parse_multiple_formatted_strings(string):
-    # 定义通用的正则表达式来匹配 <标识符> 和其后的正则化数字
     pattern = r"""
-        <(?P<identifier>\w+)>\s      # 捕获 <标识符>，如 <qed>, <logp> 等
-        (?P<sign>_[+-]_\s)           # 捕获正负号
-        ((?:_\d+_\d+_\s)+)           # 捕获整数部分
-        _\._\s                       # 匹配小数点
-        ((?:_\d+_-\d+_\s)+)          # 捕获小数部分
+        <(?P<identifier>\w+)>\s      
+        (?P<sign>_[+-]_\s)           
+        ((?:_\d+_\d+_\s)+)          
+        _\._\s                       
+        ((?:_\d+_-\d+_\s)+)         
     """
     
     matches = re.finditer(pattern, string, re.VERBOSE)
 
     results = {}
 
-    # 提取数字并转化为浮点数，添加检查逻辑
     def extract_number(sign, int_part, dec_part):
-        # 提取整数部分
+
         int_numbers = re.findall(r'_(\d+)_(\d+)_', int_part)
         integer = ''.join(digit for digit, _ in int_numbers)
 
-        # 检查整数部分索引递增性
+
         int_indices = [int(index) for _, index in int_numbers]
         if int_indices != sorted(int_indices):
-            raise ValueError("整数部分的索引没有递增")
+            raise ValueError
 
-        # 提取小数部分
+    
         dec_numbers = re.findall(r'_(\d+)_-(\d+)_', dec_part)
         decimal = ''.join(digit for digit, _ in dec_numbers)
 
-        # 检查小数部分索引递减性
+        
         dec_indices = [-int(index) for _, index in dec_numbers]
         if dec_indices != sorted(dec_indices, reverse=True):
-            raise ValueError("小数部分的索引没有递减")
-
-        # 组合整数和小数，形成浮点数
+            raise ValueError
         number = float(f"{integer}.{decimal}")
-        
-        # 根据正负号调整
+    
         if sign == '_-_ ':
             number = -number
         return number
-    
-    # 遍历所有的匹配项
     for match in matches:
         identifier = match.group('identifier')
         sign = match.group('sign')
         int_part = match.group(3)
         dec_part = match.group(4)
-
-        # 解析并获取数值
         number = extract_number(sign, int_part, dec_part)
         results[identifier] = number
 
@@ -164,8 +153,6 @@ def metric_eval(ref, cand):
     n_mse = []
     rs, cs = [], []
     for i in range(len(ref)):
-        # r = (ref[i] * std) + mean#数据标准化
-        # c = (cand[i] * std) + mean
         r=ref[i]
         c=cand[i]
         rs.append(r)
@@ -245,7 +232,7 @@ def main(args, config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--checkpoint', default='./model_save/checkpoint_step=260000.ckpt')
+    parser.add_argument('--checkpoint', default='./model_save/checkpoint_step.ckpt')
     parser.add_argument('--vocab_filename', default='./vocab.txt')
     parser.add_argument('--input_file', default='./data/SMILES-property/zinc15_1k_unseen_pp.csv')
     parser.add_argument('--output_file', default='zinc15_1k_unseen_prediction.csv')
@@ -259,4 +246,5 @@ if __name__ == '__main__':
         'bert_config_property': './config_bert_property.json',
     }
     main(args, config)
+
 
