@@ -6,7 +6,7 @@ rdkit==2023.3.1
 
 pandas==2.0.2
 
-**Data**
+**Data and checkpoints**
 -------
 Data and checkpoints can be found [here](https://drive.google.com/drive/folders/1VI3bUp1TICbnDLCLF8wKFo3qtxcRVsCk?usp=sharing)
 
