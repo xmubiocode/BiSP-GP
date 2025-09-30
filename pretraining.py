@@ -1,6 +1,6 @@
 from torch.utils.data import DataLoader
 
-from pretrain_model import PSBPGM
+from pretrain_model import BiSP_GP
 import argparse
 import torch
 import pytorch_lightning as pl
@@ -19,7 +19,7 @@ def main(args,config):
     tokenizer.wordpiece_tokenizer = WordpieceTokenizer(vocab=tokenizer.vocab, unk_token=tokenizer.unk_token, max_input_chars_per_word=250)
     
     #model
-    model= PSBPGM(config=config,tokenizer=tokenizer,loader_len=len(data_loader) // torch.cuda.device_count())
+    model= BiSP_GP(config=config,tokenizer=tokenizer,loader_len=len(data_loader) // torch.cuda.device_count())
     if args.checkpoint:
         checkpoint = torch.load(args.checkpoint, map_location='cpu')
         _ = model.load_state_dict(checkpoint['state_dict'], strict=False)
