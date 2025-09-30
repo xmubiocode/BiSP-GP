@@ -192,7 +192,6 @@ def metric_eval(prop_input, cand,prop_idx,train_smiles=None,mean=None,std=None,s
                 n_cdd = (prop_cdd - mean) / std
                 mse.append((n_ref - n_cdd) ** 2)
                 mse_1.append((prop_input-prop_cdd)**2)
-                #计算平均绝对差
                 mad.append(abs(prop_input-prop_cdd))
         
             except:
@@ -398,7 +397,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--checkpoint', default='/model_save/checkpoint_step.ckpt')
     parser.add_argument('--vocab_filename', default='./vocab.txt')
-    parser.add_argument('--train_smiles', default="/data/train_data.csv")
+    parser.add_argument('--train_smiles', default="./data/pretraining/pretraining_data.csv")
     parser.add_argument('--train_smiles_num', default=20000000)
     parser.add_argument('--test_scaffold', default=None)
     parser.add_argument('--output_dir', default="/output_smiles/generation_signprop_scaffld/")
@@ -464,3 +463,4 @@ if __name__ == '__main__':
 
 
 #
+
