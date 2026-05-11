@@ -67,55 +67,19 @@ def generate_with_property(model, properties=None,scaffold=None, n_sample=None, 
     # test
     model.eval()
     print(f"PV-to-SMILES generation in {'stochastic' if stochastic else 'deterministic'} manner with k={k}...")
-
-    if scaffold is not None and properties is not None:
-        scaffold_input=tokenizer(scaffold,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)
-        scaffold_emdeds=model.text_encoder.bert(scaffold_input.input_ids[:,1:], scaffold_input.attention_mask[:,1:],return_dict=True,mode='text').last_hidden_state
-        print("scaffold_emdeds",scaffold_input)
-        prop_input=tokenizer(properties,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)
-        print("prop_input",prop_input.input_ids)
-        prop_embeds = model.property_encoder.bert(prop_input.input_ids, prop_input.attention_mask,return_dict=True,mode='text').last_hidden_state
-        print("prop_embeds",prop_embeds.size())
-        condation_input=torch.cat((prop_embeds[:,:-1],scaffold_emdeds[:,1:]),dim=1)
-        condation_atten_mask=torch.cat((prop_input.attention_mask[:,:-1],scaffold_input.attention_mask[:,2:]),dim=1)
-        print("condation_input",condation_input)
-        print("condation_input",condation_input.size())
-        print("condation_atten_mask",condation_atten_mask)
-        print("condation_atten_mask",condation_atten_mask.size())
-    elif scaffold is not None and properties is None:
-        scaffold_input=tokenizer(scaffold,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)
-        scaffold_emdeds=model.text_encoder.bert(scaffold_input.input_ids[:,1:], scaffold_input.attention_mask[:,1:],return_dict=True,mode='text').last_hidden_state
-        condation_input=scaffold_emdeds
-        condation_atten_mask=scaffold_input.attention_mask[:,1:]
-    elif scaffold is None and properties is not None:
-        prop_input=tokenizer(properties,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)
-        prop_embeds = model.property_encoder.bert(prop_input.input_ids, prop_input.attention_mask,return_dict=True,mode='text').last_hidden_state
-        print("prop_input",prop_input.input_ids)
-        condation_input=prop_embeds
-        condation_atten_mask=prop_input.attention_mask
-    else:
-        print("Please input scaffold or properties")"""
-    
+    candidate=[]
     if scaffold is not None:
         scaffold_input=tokenizer(scaffold,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)
         scaffold_emdeds=model.text_encoder.bert(scaffold_input.input_ids[:,1:], scaffold_input.attention_mask[:,1:],return_dict=True,mode='text').last_hidden_state
-        print("scaffold_emdeds",scaffold_input)
         prop_input=tokenizer(properties,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)
-        print("prop_input",prop_input.input_ids)
         prop_embeds = model.property_encoder.bert(prop_input.input_ids, prop_input.attention_mask,return_dict=True,mode='text').last_hidden_state
-        print("prop_embeds",prop_embeds.size())
         condation_input=torch.cat((prop_embeds[:,:-1],scaffold_emdeds[:,1:]),dim=1)
         condation_atten_mask=torch.cat((prop_input.attention_mask[:,:-1],scaffold_input.attention_mask[:,2:]),dim=1)
         # condation_input=torch.cat((prop_embeds,scaffold_emdeds),dim=1)
         # condation_atten_mask=torch.cat((prop_input.attention_mask,scaffold_input.attention_mask[:,1:]),dim=1)
-        print("condation_input",condation_input)
-        print("condation_input",condation_input.size())
-        print("condation_atten_mask",condation_atten_mask)
-        print("condation_atten_mask",condation_atten_mask.size())
     elif scaffold is None:
         prop_input=tokenizer(properties,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)
         prop_embeds = model.property_encoder.bert(prop_input.input_ids, prop_input.attention_mask,return_dict=True,mode='text').last_hidden_state
-        print("prop_input",prop_input.input_ids)
         condation_input=prop_embeds
         condation_atten_mask=prop_input.attention_mask
     else:
