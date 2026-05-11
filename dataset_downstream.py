@@ -10,21 +10,12 @@ from pysmilesutils.augment import MolAugmenter
 RDLogger.DisableLog('rdApp.*')
 
 def format_number(number):
-    # 提取正负号
     sign = '_+_ ' if number[0] != '-' else '_-_ '
     number = number.lstrip('-')
-
-    # 处理整数和小数部分
     integer_part, decimal_part = number.split('.')
-    
-    # 处理整数部分
     n=len(integer_part)
     result = sign + ' '.join(f'_{digit}_{n-i-1}_' for i, digit in enumerate(integer_part, start=0))
-    
-    # 处理小数点
     result += ' _._ '
-    
-    # 处理小数部分
     result += ' '.join(f'_{digit}_-{i}_' for i, digit in enumerate(decimal_part, start=1))
     
     return result
