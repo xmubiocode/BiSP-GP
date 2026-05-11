@@ -72,15 +72,12 @@ def generate_with_property(model, properties=None,scaffold=None, n_sample=None, 
         scaffold_input=tokenizer(scaffold,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)
         scaffold_emdeds=model.text_encoder.bert(scaffold_input.input_ids[:,1:], scaffold_input.attention_mask[:,1:],return_dict=True,mode='text').last_hidden_state
         print("scaffold_emdeds",scaffold_input)
-        prop_input=tokenizer(properties,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)#padding='longest'表示填充到最长的序列，padding="max_length"表示填充到最大长度为120
+        prop_input=tokenizer(properties,padding='longest',return_tensors='pt',truncation=True,max_length=prop_len).to(device)
         print("prop_input",prop_input.input_ids)
         prop_embeds = model.property_encoder.bert(prop_input.input_ids, prop_input.attention_mask,return_dict=True,mode='text').last_hidden_state
         print("prop_embeds",prop_embeds.size())
-        ###将属性和支架的embedding拼接,prop_embeds[:,:-1]表示去掉[SEQ]的embedding，scaffold_emdeds[:,1:]表示去掉[CLS]的embedding
         condation_input=torch.cat((prop_embeds[:,:-1],scaffold_emdeds[:,1:]),dim=1)
         condation_atten_mask=torch.cat((prop_input.attention_mask[:,:-1],scaffold_input.attention_mask[:,2:]),dim=1)
-        # condation_input=torch.cat((prop_embeds,scaffold_emdeds),dim=1)
-        # condation_atten_mask=torch.cat((prop_input.attention_mask,scaffold_input.attention_mask[:,1:]),dim=1)
         print("condation_input",condation_input)
         print("condation_input",condation_input.size())
         print("condation_atten_mask",condation_atten_mask)
@@ -332,8 +329,7 @@ def main(args, config,prop_input):
             
             print("prop",prop)
             prop_input=transform_string_generation(prop)    
-                
-            ##是否有scaffold条件
+
             if args.scaffold:
                 scaffold_smiles_s=scaffold_input_test[i]
                 scaffold_smiles='[CLS]<scaffold>'+scaffold_smiles_s
