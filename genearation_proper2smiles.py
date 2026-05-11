@@ -58,7 +58,6 @@ def generate(model, image_embeds, text, prop_att_mask=None, k=None):
 @torch.no_grad()
 def generate_with_property(model, properties=None,scaffold=None, n_sample=None, k=2, prop_len=None):
     
-    print(properties, scaffold, n_sample, k, prop_len)
     device = model.device
     tokenizer = model.tokenizer
   
